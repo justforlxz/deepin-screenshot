@@ -25,6 +25,7 @@
 #include <QWindow>
 
 #include "dbusinterface/dbusnotify.h"
+#include "utils/cmd_parser.h"
 
 #include <dscreenwindowsutil.h>
 
@@ -70,27 +71,33 @@ void Screenshot::startScreenshot()
     initUI();
     this->show();
 
-    m_window->startScreenshot();
+    // TODO(lxz): 这个选项特殊，会忽略所有的操作。
+    if (!CmdParser::Instance()->savePath.isEmpty()) {
+        savePathScreenshot(CmdParser::Instance()->savePath);
+        return;
+    }
+
+    if (CmdParser::Instance()->topWindow && !CmdParser::Instance()->fullScreen) {
+        topWindowScreenshot();
+    }
+    else if (CmdParser::Instance()->fullScreen) {
+        fullscreenScreenshot();
+    }
+    else {
+        m_window->startScreenshot();
+    }
 }
 
-void Screenshot::delayScreenshot(double num)
+void Screenshot::delayScreenshot(uint num)
 {
-    QString summary = QString(tr("Deepin Screenshot will start after %1 seconds").arg(num));
+    if (num < 2 || CmdParser::Instance()->prohibitNotify) return;
+
+    QString     summary = QString(tr("Deepin Screenshot will start after %1 seconds").arg(num));
     QStringList actions = QStringList();
     QVariantMap hints;
     DBusNotify* notifyDBus = new DBusNotify(this);
-    if (num >= 2) {
-        notifyDBus->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-                                    summary, actions, hints, 0);
-    }
-
-    QTimer* timer = new QTimer;
-    timer->setSingleShot(true);
-    timer->start(int(1000*num));
-    connect(timer, &QTimer::timeout, this, [=]{
-        notifyDBus->CloseNotification(0);
-        startScreenshot();
-    });
+    notifyDBus->Notify("Deepin Screenshot", 0, "deepin-screenshot", "", summary, actions, hints, 0);
+    QTimer::singleShot(num * 1000, this, [=] { notifyDBus->CloseNotification(0); });
 }
 
 void Screenshot::fullscreenScreenshot()
@@ -150,4 +157,3 @@ bool Screenshot::eventFilter(QObject* watched, QEvent *event)
 }
 
 Screenshot::~Screenshot() {}
-

@@ -26,6 +26,7 @@ set(SRCS
 
 # utils
         "src/utils/baseutils.h"
+        "src/utils/cmd_parser.h"
         "src/utils/calculaterect.h"
         "src/utils/configsettings.h"
         "src/utils/screenutils.h"

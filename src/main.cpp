@@ -23,9 +23,11 @@
 
 #include <QObject>
 #include <QTranslator>
+#include <DDBusSender>
 
 #include "screenshot.h"
 #include "dbusservice/dbusscreenshotservice.h"
+#include "utils/cmd_parser.h"
 
 DWIDGET_USE_NAMESPACE
 
@@ -45,6 +47,8 @@ int main(int argc, char *argv[])
      a.setTheme("light");
      a.setQuitOnLastWindowClosed(false);
      a.setAttribute(Qt::AA_UseHighDpiPixmaps);
+
+     CmdParser* cmd_parser = CmdParser::Instance();
 
      using namespace Dtk::Core;
      Dtk::Core::DLogManager::registerConsoleAppender();
@@ -77,6 +81,26 @@ int main(int argc, char *argv[])
      cmdParser.addOption(dbusOption);
      cmdParser.process(a);
 
+     if (cmdParser.isSet(delayOption)) {
+         cmd_parser->delay = cmdParser.value(delayOption).toUInt();
+     }
+
+     if (cmdParser.isSet(fullscreenOption)) {
+         cmd_parser->fullScreen = true;
+     }
+
+     if (cmdParser.isSet(topWindowOption)) {
+         cmd_parser->topWindow = true;
+     }
+
+     if (cmdParser.isSet(savePathOption)) {
+         cmd_parser->savePath = cmdParser.value(savePathOption);
+     }
+
+     if (cmdParser.isSet(prohibitNotifyOption)) {
+         cmd_parser->prohibitNotify = true;
+     }
+
      Screenshot w;
      w.hide();
 
@@ -86,36 +110,22 @@ int main(int argc, char *argv[])
      QDBusConnection conn = QDBusConnection::sessionBus();
      if (!conn.registerService("com.deepin.Screenshot") ||
              !conn.registerObject("/com/deepin/Screenshot", &w)) {
-         qDebug() << "deepin-screenshot is running!";
 
          qApp->quit();
          return 0;
      }
 
-     if (cmdParser.isSet(dbusOption))
-     {
-         qDebug() << "dbus register waiting!";
+     if (cmdParser.isSet(dbusOption)) {
+         qDebug() << "dbus register wating!";
          return a.exec();
-     } else {
-         if (cmdParser.isSet(delayOption)) {
-             qDebug() << "cmd delay screenshot";
-             w.delayScreenshot(cmdParser.value(delayOption).toInt());
-         } else if (cmdParser.isSet(fullscreenOption)) {
-             w.fullscreenScreenshot();
-         } else if (cmdParser.isSet(topWindowOption)) {
-             qDebug() << "cmd topWindow screenshot";
-             w.topWindowScreenshot();
-         } else if (cmdParser.isSet(savePathOption)) {
-             qDebug() << "cmd savepath screenshot";
-             w.savePathScreenshot(cmdParser.value(savePathOption));
-         } else if (cmdParser.isSet(prohibitNotifyOption)) {
-             qDebug() << "screenshot no notify!";
-             w.noNotifyScreenshot();
-         } else if (cmdParser.isSet(iconOption)) {
-             w.delayScreenshot(0.2);
-         }  else {
-             w.startScreenshot();
-         }
+     }
+     else {
+        if (cmd_parser->delay != 0 && !cmd_parser->prohibitNotify) {
+            // send delay screenshot notify
+            w.delayScreenshot(cmd_parser->delay);
+        }
+
+         QTimer::singleShot(cmd_parser->delay * 1000, &w, &Screenshot::startScreenshot);
      }
 
      return a.exec();

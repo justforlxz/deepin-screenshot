@@ -42,6 +42,7 @@
 
 #include "src/utils/screenutils.h"
 #include "src/utils/tempfile.h"
+#include "src/utils/cmd_parser.h"
 
 DWIDGET_USE_NAMESPACE
 
@@ -999,6 +1000,8 @@ void MainWindow::saveSpecificedPath(QString path)
     m_resultPixmap.save(savePath);
 //    DDesktopServices::playSystemSoundEffect(DDesktopServices::SSE_Screenshot);
 
+    if (CmdParser::Instance()->prohibitNotify) return exitApp();
+
     QStringList actions;
     actions << "_open" << tr("View");
     QVariantMap hints;
@@ -1359,6 +1362,10 @@ bool MainWindow::saveAction(const QPixmap &pix)
 
 void MainWindow::sendNotify(int saveIndex, QString saveFilePath, const bool succeed)
 {
+    if (CmdParser::Instance()->prohibitNotify) {
+        return QTimer::singleShot(0, this, &MainWindow::exitApp);
+    }
+
     // failed notify
     if (!succeed)
     {
@@ -1413,7 +1420,6 @@ void MainWindow::sendNotify(int saveIndex, QString saveFilePath, const bool succ
     QTimer::singleShot(2, [=]{
         exitApp();
     });
-
 }
 
 void MainWindow::reloadImage(QString effect)

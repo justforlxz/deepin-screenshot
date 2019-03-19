@@ -31,10 +31,10 @@ public:
 
 public slots:
     void startScreenshot();
-    void delayScreenshot(double num);
+    void delayScreenshot(uint num);
     void fullscreenScreenshot();
     void topWindowScreenshot();
-    void noNotifyScreenshot();
+    Q_DECL_DEPRECATED void noNotifyScreenshot();
     void savePathScreenshot(const QString &path);
 
 protected:

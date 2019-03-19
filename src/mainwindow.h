@@ -85,7 +85,7 @@ public slots:
     void savePath(const QString &path);
     void saveSpecificedPath(QString path);
 //    void delayScreenshot(int num);
-    void noNotify();
+    Q_DECL_DEPRECATED void noNotify();
     void topWindow();
     void expressSaveScreenshot();
     //Indicate that this program's started by clicking desktop file.
